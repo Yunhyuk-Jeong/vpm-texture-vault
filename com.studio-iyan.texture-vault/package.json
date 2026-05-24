@@ -1,7 +1,7 @@
 {
   "name": "com.studio-iyan.texture-vault",
   "displayName": "Studio Iyan Texture Vault",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "unity": "2022.3",
   "description": "Unity Editor tool for saving texture import settings to JSON, applying a temporary Standalone BC7 / Max Size 4096 profile, and restoring the original settings.",
   "author": {
@@ -20,6 +20,6 @@
     "vrchat"
   ],
   "vpmDependencies": {},
-  "url": "https://github.com/Yunhyuk-Jeong/vpm-texture-vault/releases/download/v1.0.0/com.studio-iyan.texture-vault-1.0.0.zip",
+  "url": "https://github.com/Yunhyuk-Jeong/vpm-texture-vault/releases/download/v1.0.1/com.studio-iyan.texture-vault-1.0.1.zip",
   "changelogUrl": "https://github.com/Yunhyuk-Jeong/vpm-texture-vault/blob/main/com.studio-iyan.texture-vault/CHANGELOG.md"
 }
