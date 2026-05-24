@@ -125,7 +125,7 @@ namespace StudioIyan.TextureVault
 
     internal static class TextureVaultConstants
     {
-        public const string ToolVersion = "1.0.1";
+        public const string ToolVersion = "1.0.2";
         public const string SnapshotFolder = "Assets/StudioIyan/TextureVault/Snapshots";
         public const string StandalonePlatformName = "Standalone";
         public static readonly string[] PreservedPlatformNames =

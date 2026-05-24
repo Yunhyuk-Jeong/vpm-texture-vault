@@ -1,4 +1,4 @@
-name: Release
+name: Release VPM package
 
 on:
   push:
@@ -9,66 +9,141 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Resolve package directory
-        id: paths
-        shell: bash
+      - name: Read package metadata
+        id: meta
         run: |
-          if [ -f "package.json" ]; then
-            echo "package_dir=." >> "$GITHUB_OUTPUT"
-          elif [ -f "com.studio-iyan.texture-vault/package.json" ]; then
-            echo "package_dir=com.studio-iyan.texture-vault" >> "$GITHUB_OUTPUT"
-          else
-            echo "package.json not found" >&2
-            exit 1
-          fi
+          PKG_JSON="com.studio-iyan.texture-vault/package.json"
 
-      - name: Validate tag version
-        shell: bash
-        run: |
-          PACKAGE_DIR="${{ steps.paths.outputs.package_dir }}"
-          VERSION="$(python -c 'import json, pathlib; print(json.loads(pathlib.Path("'"$PACKAGE_DIR"'", "package.json").read_text(encoding="utf-8"))["version"])')"
+          PKG_NAME=$(jq -r '.name' "$PKG_JSON")
+          VERSION=$(jq -r '.version' "$PKG_JSON")
+          DISPLAY=$(jq -r '.displayName // ""' "$PKG_JSON")
+          DESC=$(jq -r '.description // ""' "$PKG_JSON")
+          UNITY=$(jq -r '.unity // "2022.3"' "$PKG_JSON")
+          AUTHOR_NAME=$(jq -r '.author.name // ""' "$PKG_JSON")
+          AUTHOR_EMAIL=$(jq -r '.author.email // ""' "$PKG_JSON")
+          AUTHOR_URL=$(jq -r '.author.url // ""' "$PKG_JSON")
+
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           if [ "$VERSION" != "$TAG_VERSION" ]; then
             echo "Tag version $TAG_VERSION does not match package.json version $VERSION" >&2
             exit 1
           fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      - name: Build clean package zip
-        shell: bash
+          echo "pkg_name=$PKG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "display=$DISPLAY" >> "$GITHUB_OUTPUT"
+          echo "desc=$DESC" >> "$GITHUB_OUTPUT"
+          echo "unity=$UNITY" >> "$GITHUB_OUTPUT"
+          echo "author_name=$AUTHOR_NAME" >> "$GITHUB_OUTPUT"
+          echo "author_email=$AUTHOR_EMAIL" >> "$GITHUB_OUTPUT"
+          echo "author_url=$AUTHOR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Build VPM zip
+        working-directory: com.studio-iyan.texture-vault
         run: |
-          PACKAGE_DIR="${{ steps.paths.outputs.package_dir }}"
-          ZIP_NAME="com.studio-iyan.texture-vault-${VERSION}.zip"
-          STAGE_DIR="$(mktemp -d)"
-          mkdir -p "$STAGE_DIR/package"
-          rsync -a "$PACKAGE_DIR"/ "$STAGE_DIR/package"/ \
-            --exclude ".git" \
-            --exclude ".github" \
-            --exclude "Tools" \
-            --exclude "Library" \
-            --exclude "Temp" \
-            --exclude "Obj" \
-            --exclude "Logs" \
-            --exclude "UserSettings" \
-            --exclude "public" \
-            --exclude "dist" \
-            --exclude "*.user" \
-            --exclude "*.tmp" \
-            --exclude "*.log"
-          (cd "$STAGE_DIR/package" && zip -r "$GITHUB_WORKSPACE/$ZIP_NAME" .)
-          sha256sum "$ZIP_NAME" > "$ZIP_NAME.sha256"
-          echo "ZIP_NAME=$ZIP_NAME" >> "$GITHUB_ENV"
+          PKG_NAME="${{ steps.meta.outputs.pkg_name }}"
+          VERSION="${{ steps.meta.outputs.version }}"
 
-      - name: Upload GitHub Release assets
+          mkdir -p ../out
+          zip -r "../out/${PKG_NAME}-${VERSION}.zip" . \
+            -x "Library/*" "Temp/*" "Obj/*" "Logs/*" "UserSettings/*" "*.user" "*.tmp" "*.log"
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          FILE=$(ls out/*.zip)
+          SHA=$(sha256sum "$FILE" | awk '{print $1}')
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ${{ env.ZIP_NAME }}
-            ${{ env.ZIP_NAME }}.sha256
+          files: out/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout iyan-vpm
+        uses: actions/checkout@v4
+        with:
+          repository: Yunhyuk-Jeong/iyan-vpm
+          token: ${{ secrets.VPM_PUSH_TOKEN }}
+          path: iyan-vpm
+
+      - name: Update vpm.json
+        run: |
+          PKG_NAME="${{ steps.meta.outputs.pkg_name }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+          DISPLAY="${{ steps.meta.outputs.display }}"
+          DESC="${{ steps.meta.outputs.desc }}"
+          UNITY="${{ steps.meta.outputs.unity }}"
+          AUTHOR_NAME="${{ steps.meta.outputs.author_name }}"
+          AUTHOR_EMAIL="${{ steps.meta.outputs.author_email }}"
+          AUTHOR_URL="${{ steps.meta.outputs.author_url }}"
+          SHA="${{ steps.sha.outputs.sha }}"
+
+          VPM="iyan-vpm/vpm.json"
+
+          URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${PKG_NAME}-${VERSION}.zip"
+          REPO_URL="https://raw.githubusercontent.com/Yunhyuk-Jeong/iyan-vpm/main/vpm.json"
+          DOC_URL="https://github.com/${{ github.repository }}"
+          CHANGELOG_URL="https://github.com/${{ github.repository }}/releases/tag/v${VERSION}"
+
+          jq \
+            --arg pkg "$PKG_NAME" \
+            --arg ver "$VERSION" \
+            --arg disp "$DISPLAY" \
+            --arg desc "$DESC" \
+            --arg unity "$UNITY" \
+            --arg sha "$SHA" \
+            --arg url "$URL" \
+            --arg repo "$REPO_URL" \
+            --arg doc "$DOC_URL" \
+            --arg changelog "$CHANGELOG_URL" \
+            --arg aName "$AUTHOR_NAME" \
+            --arg aEmail "$AUTHOR_EMAIL" \
+            --arg aUrl "$AUTHOR_URL" \
+            '.packages[$pkg] = (.packages[$pkg] // {versions: {}}) |
+             .packages[$pkg].versions[$ver] = {
+              name: $pkg,
+              displayName: $disp,
+              version: $ver,
+              unity: $unity,
+              description: $desc,
+              vrchatVersion: "2022.1.1",
+              author: {name: $aName, email: $aEmail, url: $aUrl},
+              dependencies: {},
+              url: $url,
+              repo: $repo,
+              zipSHA256: $sha,
+              documentationUrl: $doc,
+              changelogUrl: $changelog
+            }' "$VPM" > tmp && mv tmp "$VPM"
+
+      - name: Commit and push VPM index changes
+        run: |
+          PKG_NAME="${{ steps.meta.outputs.pkg_name }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+
+          cd iyan-vpm
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add vpm.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(vpm): auto-update $PKG_NAME $VERSION"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.VPM_PUSH_TOKEN }}

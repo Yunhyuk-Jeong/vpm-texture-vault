@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Switched release automation to update the central `Yunhyuk-Jeong/iyan-vpm` VPM index.
+- Removed GitHub Pages VPM listing deployment.
+- Updated package author email.
+
 ## 1.0.1
 
 - Added Japanese/Korean/English language selector in the window header.
