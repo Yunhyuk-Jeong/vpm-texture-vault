@@ -40,27 +40,49 @@ namespace StudioIyan.TextureVault
 
         private void DrawHeader()
         {
-            EditorGUILayout.LabelField("Studio Iyan Texture Vault", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Save texture import settings, apply a temporary Standalone BC7 / Max Size 4096 profile, and restore the original settings.", EditorStyles.wordWrappedMiniLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    EditorGUILayout.LabelField("Studio Iyan Texture Vault", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(string.Format(TextureVaultLocalization.T("VersionLabel"), TextureVaultConstants.ToolVersion), EditorStyles.miniLabel);
+                }
+
+                GUILayout.FlexibleSpace();
+                DrawLanguageSelector();
+            }
+
+            EditorGUILayout.LabelField(TextureVaultLocalization.T("HeaderDescription"), EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.Space(8);
+        }
+
+        private void DrawLanguageSelector()
+        {
+            int previousIndex = TextureVaultLocalization.ToolbarIndex;
+            int selectedIndex = GUILayout.Toolbar(previousIndex, TextureVaultLocalization.ToolbarLabels, EditorStyles.miniButton, GUILayout.Width(180));
+            if (selectedIndex != previousIndex)
+            {
+                TextureVaultLocalization.ToolbarIndex = selectedIndex;
+                Repaint();
+            }
         }
 
         private void DrawRootAndOptions()
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                var newRootObject = (GameObject)EditorGUILayout.ObjectField("Root GameObject", _rootObject, typeof(GameObject), true);
+                var newRootObject = (GameObject)EditorGUILayout.ObjectField(TextureVaultLocalization.T("RootGameObject"), _rootObject, typeof(GameObject), true);
                 if (newRootObject != _rootObject)
                 {
                     _rootObject = newRootObject;
                     _scanResult = null;
                     _snapshotSavedForCurrentScan = false;
                 }
-                _includeInactiveChildren = EditorGUILayout.ToggleLeft("Include inactive children", _includeInactiveChildren);
-                _skipPackageCacheTextures = EditorGUILayout.ToggleLeft("Skip PackageCache textures", _skipPackageCacheTextures);
-                _skipBuiltInOrNonAssetsTextures = EditorGUILayout.ToggleLeft("Skip built-in or non-Assets textures", _skipBuiltInOrNonAssetsTextures);
-                _showConfirmationBeforeReimport = EditorGUILayout.ToggleLeft("Show confirmation before reimport", _showConfirmationBeforeReimport);
-                _includeSerializedFallback = EditorGUILayout.ToggleLeft("Use safe serialized material texture fallback", _includeSerializedFallback);
+                _includeInactiveChildren = EditorGUILayout.ToggleLeft(TextureVaultLocalization.T("IncludeInactive"), _includeInactiveChildren);
+                _skipPackageCacheTextures = EditorGUILayout.ToggleLeft(TextureVaultLocalization.T("SkipPackageCache"), _skipPackageCacheTextures);
+                _skipBuiltInOrNonAssetsTextures = EditorGUILayout.ToggleLeft(TextureVaultLocalization.T("SkipBuiltIn"), _skipBuiltInOrNonAssetsTextures);
+                _showConfirmationBeforeReimport = EditorGUILayout.ToggleLeft(TextureVaultLocalization.T("ShowConfirmation"), _showConfirmationBeforeReimport);
+                _includeSerializedFallback = EditorGUILayout.ToggleLeft(TextureVaultLocalization.T("SerializedFallback"), _includeSerializedFallback);
             }
         }
 
@@ -68,17 +90,17 @@ namespace StudioIyan.TextureVault
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Scan", GUILayout.Height(28)))
+                if (GUILayout.Button(TextureVaultLocalization.T("Scan"), GUILayout.Height(28)))
                 {
                     Scan();
                 }
 
-                if (GUILayout.Button("Save Snapshot JSON", GUILayout.Height(28)))
+                if (GUILayout.Button(TextureVaultLocalization.T("SaveSnapshot"), GUILayout.Height(28)))
                 {
                     SaveSnapshotWithDialog();
                 }
 
-                if (GUILayout.Button("Load Snapshot JSON", GUILayout.Height(28)))
+                if (GUILayout.Button(TextureVaultLocalization.T("LoadSnapshot"), GUILayout.Height(28)))
                 {
                     LoadSnapshotWithDialog();
                 }
@@ -86,12 +108,12 @@ namespace StudioIyan.TextureVault
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Apply BC7 / Max Size 4096", GUILayout.Height(30)))
+                if (GUILayout.Button(TextureVaultLocalization.T("ApplyProfile"), GUILayout.Height(30)))
                 {
                     ApplyProfile();
                 }
 
-                if (GUILayout.Button("Restore From Snapshot", GUILayout.Height(30)))
+                if (GUILayout.Button(TextureVaultLocalization.T("RestoreSnapshot"), GUILayout.Height(30)))
                 {
                     RestoreFromSnapshot();
                 }
@@ -107,54 +129,87 @@ namespace StudioIyan.TextureVault
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Found renderers", foundRenderers.ToString());
-                EditorGUILayout.LabelField("Found materials", foundMaterials.ToString());
-                EditorGUILayout.LabelField("Found textures", foundTextures.ToString());
-                EditorGUILayout.LabelField("Skipped textures", skippedTextures.ToString());
-                EditorGUILayout.LabelField("Last snapshot path", string.IsNullOrEmpty(_lastSnapshotPath) ? "(none)" : _lastSnapshotPath);
+                EditorGUILayout.LabelField(TextureVaultLocalization.T("FoundRenderers"), foundRenderers.ToString());
+                EditorGUILayout.LabelField(TextureVaultLocalization.T("FoundMaterials"), foundMaterials.ToString());
+                EditorGUILayout.LabelField(TextureVaultLocalization.T("FoundTextures"), foundTextures.ToString());
+                EditorGUILayout.LabelField(TextureVaultLocalization.T("SkippedTextures"), skippedTextures.ToString());
+                EditorGUILayout.LabelField(TextureVaultLocalization.T("LastSnapshotPath"), string.IsNullOrEmpty(_lastSnapshotPath) ? TextureVaultLocalization.T("None") : _lastSnapshotPath);
             }
         }
 
         private void DrawResultTable()
         {
-            EditorGUILayout.LabelField("Results", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(TextureVaultLocalization.T("Results"), EditorStyles.boldLabel);
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
             if (_scanResult == null || _scanResult.textures.Count == 0)
             {
-                EditorGUILayout.HelpBox("No scan results yet.", MessageType.Info);
+                EditorGUILayout.HelpBox(TextureVaultLocalization.T("NoScanResults"), MessageType.Info);
                 EditorGUILayout.EndScrollView();
                 return;
             }
 
             foreach (TextureVaultScannedTexture texture in _scanResult.textures)
             {
-                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                {
-                    string formatLabel = texture.standaloneSettings.overridden
-                        ? texture.standaloneSettings.format.ToString()
-                        : $"Default ({texture.standaloneSettings.format})";
-                    string sizeLabel = texture.standaloneSettings.overridden
-                        ? texture.standaloneSettings.maxTextureSize.ToString()
-                        : $"Default ({texture.standaloneSettings.maxTextureSize})";
-
-                    EditorGUILayout.LabelField(texture.textureName, EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField("Asset path", texture.assetPath);
-                    EditorGUILayout.LabelField("Width x height", $"{texture.width} x {texture.height}");
-                    EditorGUILayout.LabelField("Current Standalone max size", sizeLabel);
-                    EditorGUILayout.LabelField("Current Standalone format", formatLabel);
-                    EditorGUILayout.LabelField("Used by", BuildUsageSummary(texture));
-                }
+                DrawTextureResultRow(texture);
             }
 
             EditorGUILayout.EndScrollView();
+        }
+
+        private static void DrawTextureResultRow(TextureVaultScannedTexture texture)
+        {
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox, GUILayout.MinHeight(56)))
+            {
+                DrawTexturePreviewButton(texture);
+
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    EditorGUILayout.LabelField(texture.textureName, EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(BuildCurrentInfoLine(texture), EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField(BuildUsageSummary(texture), EditorStyles.miniLabel);
+                }
+            }
+        }
+
+        private static void DrawTexturePreviewButton(TextureVaultScannedTexture texture)
+        {
+            Texture previewTexture = null;
+            if (texture != null && texture.texture != null)
+            {
+                previewTexture = AssetPreview.GetAssetPreview(texture.texture);
+                if (previewTexture == null)
+                {
+                    previewTexture = AssetPreview.GetMiniThumbnail(texture.texture);
+                }
+            }
+
+            var content = new GUIContent(previewTexture, TextureVaultLocalization.T("SelectTextureTooltip"));
+            if (GUILayout.Button(content, GUILayout.Width(48), GUILayout.Height(48)) && texture != null && texture.texture != null)
+            {
+                Selection.activeObject = texture.texture;
+                EditorGUIUtility.PingObject(texture.texture);
+            }
+        }
+
+        private static string BuildCurrentInfoLine(TextureVaultScannedTexture texture)
+        {
+            string formatLabel = texture.standaloneSettings.overridden
+                ? texture.standaloneSettings.format.ToString()
+                : $"{TextureVaultLocalization.T("Default")} ({texture.standaloneSettings.format})";
+            string sizeLabel = texture.standaloneSettings.overridden
+                ? texture.standaloneSettings.maxTextureSize.ToString()
+                : $"{TextureVaultLocalization.T("Default")} ({texture.standaloneSettings.maxTextureSize})";
+            int usageCount = texture.usages != null ? texture.usages.Count : 0;
+
+            return $"{texture.assetPath} | {texture.width} x {texture.height} | {TextureVaultLocalization.T("StandaloneMaxShort")}: {sizeLabel} | {TextureVaultLocalization.T("FormatShort")}: {formatLabel} | {TextureVaultLocalization.T("UsagesShort")}: {usageCount}";
         }
 
         private void Scan()
         {
             if (_rootObject == null)
             {
-                EditorUtility.DisplayDialog("Texture Vault", "Assign a root GameObject before scanning.", "OK");
+                EditorUtility.DisplayDialog("Texture Vault", TextureVaultLocalization.T("AssignRootBeforeScan"), TextureVaultLocalization.T("Ok"));
                 return;
             }
 
@@ -182,10 +237,10 @@ namespace StudioIyan.TextureVault
             EnsureSnapshotFolderExists();
 
             string savePath = EditorUtility.SaveFilePanelInProject(
-                "Save Texture Vault Snapshot",
+                TextureVaultLocalization.T("SaveSnapshotTitle"),
                 Path.GetFileName(defaultPath),
                 "json",
-                "Choose where to save the Texture Vault snapshot JSON.",
+                TextureVaultLocalization.T("SaveSnapshotPanelMessage"),
                 TextureVaultConstants.SnapshotFolder);
 
             if (string.IsNullOrEmpty(savePath))
@@ -208,7 +263,7 @@ namespace StudioIyan.TextureVault
 
         private void LoadSnapshotWithDialog()
         {
-            string selectedPath = EditorUtility.OpenFilePanel("Load Texture Vault Snapshot", "Assets", "json");
+            string selectedPath = EditorUtility.OpenFilePanel(TextureVaultLocalization.T("LoadSnapshotTitle"), "Assets", "json");
             if (string.IsNullOrEmpty(selectedPath))
             {
                 return;
@@ -228,7 +283,7 @@ namespace StudioIyan.TextureVault
             }
             catch (Exception exception)
             {
-                EditorUtility.DisplayDialog("Texture Vault", $"Failed to load snapshot JSON:\n{exception.Message}", "OK");
+                EditorUtility.DisplayDialog("Texture Vault", $"{TextureVaultLocalization.T("LoadSnapshotFailed")}\n{exception.Message}", TextureVaultLocalization.T("Ok"));
                 TextureVaultLogger.Error($"Failed to load snapshot JSON: {exception.Message}");
             }
         }
@@ -243,7 +298,7 @@ namespace StudioIyan.TextureVault
             int textureCount = _scanResult.textures.Count;
             if (textureCount == 0)
             {
-                EditorUtility.DisplayDialog("Texture Vault", "No textures were found in the current scan.", "OK");
+                EditorUtility.DisplayDialog("Texture Vault", TextureVaultLocalization.T("NoTexturesFound"), TextureVaultLocalization.T("Ok"));
                 return;
             }
 
@@ -251,10 +306,10 @@ namespace StudioIyan.TextureVault
             {
                 int choice = EditorUtility.DisplayDialogComplex(
                     "Texture Vault",
-                    $"No snapshot has been saved for the current scan.\n\nThis will reimport {textureCount} textures and modify Texture Import Settings. Source image files will not be edited.",
-                    "Save Snapshot First",
-                    "Apply Without Snapshot",
-                    "Cancel");
+                    $"{TextureVaultLocalization.T("NoSnapshotWarning")}\n\n{string.Format(TextureVaultLocalization.T("ReimportWarning"), textureCount)}",
+                    TextureVaultLocalization.T("SaveSnapshotFirst"),
+                    TextureVaultLocalization.T("ApplyWithoutSnapshot"),
+                    TextureVaultLocalization.T("Cancel"));
 
                 if (choice == 0)
                 {
@@ -278,15 +333,15 @@ namespace StudioIyan.TextureVault
             if (_showConfirmationBeforeReimport &&
                 !EditorUtility.DisplayDialog(
                     "Apply BC7 / Max Size 4096",
-                    $"This will reimport {textureCount} textures.\n\nThis modifies Texture Import Settings only. Source image files will not be edited.",
-                    "Apply BC7 / Max Size 4096",
-                    "Cancel"))
+                    string.Format(TextureVaultLocalization.T("ApplyConfirmBody"), textureCount),
+                    TextureVaultLocalization.T("ApplyProfile"),
+                    TextureVaultLocalization.T("Cancel")))
             {
                 return;
             }
 
             TextureVaultOperationSummary summary = TextureVaultApplier.ApplyBc7MaxSize4096(_scanResult.textures);
-            EditorUtility.DisplayDialog("Texture Vault", $"Apply finished.\nApplied: {summary.AppliedOrRestored}\nSkipped: {summary.Skipped}\nFailed: {summary.Failed}", "OK");
+            EditorUtility.DisplayDialog("Texture Vault", string.Format(TextureVaultLocalization.T("ApplyFinished"), summary.AppliedOrRestored, summary.Skipped, summary.Failed), TextureVaultLocalization.T("Ok"));
             Scan();
         }
 
@@ -304,22 +359,22 @@ namespace StudioIyan.TextureVault
             int textureCount = _loadedSnapshot.textures != null ? _loadedSnapshot.textures.Count : 0;
             if (textureCount == 0)
             {
-                EditorUtility.DisplayDialog("Texture Vault", "The loaded snapshot does not contain texture records.", "OK");
+                EditorUtility.DisplayDialog("Texture Vault", TextureVaultLocalization.T("SnapshotEmpty"), TextureVaultLocalization.T("Ok"));
                 return;
             }
 
             if (_showConfirmationBeforeReimport &&
                 !EditorUtility.DisplayDialog(
-                    "Restore Import Settings",
-                    $"This will reimport {textureCount} textures from the loaded snapshot.\n\nThis modifies Texture Import Settings only. Source image files will not be edited.",
-                    "Restore Import Settings",
-                    "Cancel"))
+                    TextureVaultLocalization.T("RestoreTitle"),
+                    string.Format(TextureVaultLocalization.T("RestoreConfirmBody"), textureCount),
+                    TextureVaultLocalization.T("RestoreTitle"),
+                    TextureVaultLocalization.T("Cancel")))
             {
                 return;
             }
 
             TextureVaultOperationSummary summary = TextureVaultRestore.RestoreFromSnapshot(_loadedSnapshot);
-            EditorUtility.DisplayDialog("Texture Vault", $"Restore finished.\nRestored: {summary.AppliedOrRestored}\nSkipped: {summary.Skipped}\nFailed: {summary.Failed}", "OK");
+            EditorUtility.DisplayDialog("Texture Vault", string.Format(TextureVaultLocalization.T("RestoreFinished"), summary.AppliedOrRestored, summary.Skipped, summary.Failed), TextureVaultLocalization.T("Ok"));
             if (_rootObject != null)
             {
                 Scan();
@@ -335,7 +390,7 @@ namespace StudioIyan.TextureVault
 
             if (_rootObject == null)
             {
-                EditorUtility.DisplayDialog("Texture Vault", "Assign a root GameObject first.", "OK");
+                EditorUtility.DisplayDialog("Texture Vault", TextureVaultLocalization.T("AssignRootFirst"), TextureVaultLocalization.T("Ok"));
                 return false;
             }
 
@@ -354,7 +409,7 @@ namespace StudioIyan.TextureVault
         {
             if (texture == null || texture.usages == null || texture.usages.Count == 0)
             {
-                return "(no usage records)";
+                return TextureVaultLocalization.T("NoUsageRecords");
             }
 
             var builder = new StringBuilder();

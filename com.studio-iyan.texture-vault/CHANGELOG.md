@@ -4,6 +4,9 @@
 
 - Initial release.
 - Added Unity Editor window at `Studio Iyan/Tools/Texture Vault`.
+- Added Japanese/Korean/English language selector in the window header.
+- Added package version display under the tool title.
+- Improved scan results with clickable texture thumbnails and compact one-line current import information.
 - Added renderer/material texture scanning across arbitrary shader texture properties.
 - Added safe serialized Material texture fallback.
 - Added JSON snapshot save/load support.
