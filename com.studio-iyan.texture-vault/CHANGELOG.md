@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3
+
+- Updated release automation to register this package in `iyan-vpm/sources/source-all.json` so regenerated central listings keep the package entry.
+
 ## 1.0.2
 
 - Switched release automation to update the central `Yunhyuk-Jeong/iyan-vpm` VPM index.
