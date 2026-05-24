@@ -27,7 +27,7 @@ This package is intended for Unity 2022.3 or newer and does not require runtime 
 
 1. Open VCC.
 2. Add the VPM listing URL:
-   `https://TODO_OWNER.github.io/com.studio-iyan.texture-vault/index.json`
+   `https://Yunhyuk-Jeong.github.io/vpm-texture-vault/index.json`
 3. Add `Studio Iyan Texture Vault` to your Unity project.
 
 ### Manual Install
@@ -68,7 +68,7 @@ This repository uses the same-repository listing approach. The `build-vpm-listin
 
 Final VPM URL:
 
-`https://TODO_OWNER.github.io/com.studio-iyan.texture-vault/index.json`
+`https://Yunhyuk-Jeong.github.io/vpm-texture-vault/index.json`
 
 ## Testing
 
