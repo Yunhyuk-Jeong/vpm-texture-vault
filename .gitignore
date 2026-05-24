@@ -1,0 +1,15 @@
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+.vs/
+.idea/
+*.csproj
+*.sln
+*.user
+*.tmp
+*.log
+public/
+dist/
+.verify/

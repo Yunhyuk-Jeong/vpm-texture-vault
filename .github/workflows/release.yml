@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve package directory
+        id: paths
+        shell: bash
+        run: |
+          if [ -f "package.json" ]; then
+            echo "package_dir=." >> "$GITHUB_OUTPUT"
+          elif [ -f "com.studio-iyan.texture-vault/package.json" ]; then
+            echo "package_dir=com.studio-iyan.texture-vault" >> "$GITHUB_OUTPUT"
+          else
+            echo "package.json not found" >&2
+            exit 1
+          fi
+
+      - name: Validate tag version
+        shell: bash
+        run: |
+          PACKAGE_DIR="${{ steps.paths.outputs.package_dir }}"
+          VERSION="$(python -c 'import json, pathlib; print(json.loads(pathlib.Path("'"$PACKAGE_DIR"'", "package.json").read_text(encoding="utf-8"))["version"])')"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag version $TAG_VERSION does not match package.json version $VERSION" >&2
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Build clean package zip
+        shell: bash
+        run: |
+          PACKAGE_DIR="${{ steps.paths.outputs.package_dir }}"
+          ZIP_NAME="com.studio-iyan.texture-vault-${VERSION}.zip"
+          STAGE_DIR="$(mktemp -d)"
+          mkdir -p "$STAGE_DIR/package"
+          rsync -a "$PACKAGE_DIR"/ "$STAGE_DIR/package"/ \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude "Tools" \
+            --exclude "Library" \
+            --exclude "Temp" \
+            --exclude "Obj" \
+            --exclude "Logs" \
+            --exclude "UserSettings" \
+            --exclude "public" \
+            --exclude "dist" \
+            --exclude "*.user" \
+            --exclude "*.tmp" \
+            --exclude "*.log"
+          (cd "$STAGE_DIR/package" && zip -r "$GITHUB_WORKSPACE/$ZIP_NAME" .)
+          sha256sum "$ZIP_NAME" > "$ZIP_NAME.sha256"
+          echo "ZIP_NAME=$ZIP_NAME" >> "$GITHUB_ENV"
+
+      - name: Upload GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ZIP_NAME }}
+            ${{ env.ZIP_NAME }}.sha256

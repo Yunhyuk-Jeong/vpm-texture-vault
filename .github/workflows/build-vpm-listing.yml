@@ -1,0 +1,109 @@
+name: Build VPM Listing
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-listing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve package directory
+        id: paths
+        shell: bash
+        run: |
+          if [ -f "package.json" ]; then
+            echo "package_dir=." >> "$GITHUB_OUTPUT"
+            echo "tool_path=Tools/build_vpm_listing.py" >> "$GITHUB_OUTPUT"
+          elif [ -f "com.studio-iyan.texture-vault/package.json" ]; then
+            echo "package_dir=com.studio-iyan.texture-vault" >> "$GITHUB_OUTPUT"
+            echo "tool_path=Tools/build_vpm_listing.py" >> "$GITHUB_OUTPUT"
+          else
+            echo "package.json not found" >&2
+            exit 1
+          fi
+
+      - name: Read package version
+        shell: bash
+        run: |
+          PACKAGE_DIR="${{ steps.paths.outputs.package_dir }}"
+          VERSION="$(python -c 'import json, pathlib; print(json.loads(pathlib.Path("'"$PACKAGE_DIR"'", "package.json").read_text(encoding="utf-8"))["version"])')"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [ "$VERSION" != "$TAG_VERSION" ]; then
+              echo "Tag version $TAG_VERSION does not match package.json version $VERSION" >&2
+              exit 1
+            fi
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Compute release zip checksum
+        shell: bash
+        run: |
+          PACKAGE_DIR="${{ steps.paths.outputs.package_dir }}"
+          ZIP_NAME="com.studio-iyan.texture-vault-${VERSION}.zip"
+          STAGE_DIR="$(mktemp -d)"
+          mkdir -p "$STAGE_DIR/package"
+          rsync -a "$PACKAGE_DIR"/ "$STAGE_DIR/package"/ \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude "Tools" \
+            --exclude "Library" \
+            --exclude "Temp" \
+            --exclude "Obj" \
+            --exclude "Logs" \
+            --exclude "UserSettings" \
+            --exclude "public" \
+            --exclude "dist" \
+            --exclude "*.user" \
+            --exclude "*.tmp" \
+            --exclude "*.log"
+          (cd "$STAGE_DIR/package" && zip -qr "$GITHUB_WORKSPACE/$ZIP_NAME" .)
+          ZIP_SHA256="$(sha256sum "$ZIP_NAME" | awk '{print $1}')"
+          echo "ZIP_SHA256=$ZIP_SHA256" >> "$GITHUB_ENV"
+
+      - name: Load existing listing if published
+        shell: bash
+        run: |
+          mkdir -p public
+          PAGES_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/index.json"
+          curl -fsSL "$PAGES_URL" -o public/index.json || true
+
+      - name: Generate VPM listing
+        shell: bash
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          PAGES_URL="https://${OWNER}.github.io/${REPO}/index.json"
+          python "${{ steps.paths.outputs.tool_path }}" \
+            --owner "$OWNER" \
+            --repo "$REPO" \
+            --pages-url "$PAGES_URL" \
+            --zip-sha256 "$ZIP_SHA256" \
+            --output public/index.json
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,16 @@
+{
+  "name": "StudioIyan.TextureVault.Editor",
+  "rootNamespace": "StudioIyan.TextureVault",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
